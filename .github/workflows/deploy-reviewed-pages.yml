@@ -1,0 +1,42 @@
+name: Publish reviewed GitHub Pages
+
+on:
+  push:
+    branches:
+      - "review/dialog-close-account-archive"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out reviewed source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build GitHub Pages site
+        run: npm run build:pages
+      - name: Check out published branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: pages
+      - name: Update published files
+        run: |
+          rsync -a --delete --exclude=.git dist/ pages/
+          git -C pages config user.name "github-actions[bot]"
+          git -C pages config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C pages add --all
+          if git -C pages diff --cached --quiet; then
+            echo "No published changes."
+            exit 0
+          fi
+          git -C pages commit -m "Deploy reviewed finance dashboard"
+          git -C pages push origin HEAD:gh-pages
