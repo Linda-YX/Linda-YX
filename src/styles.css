@@ -1601,3 +1601,138 @@ a.smalllink {
 .stale-label {
   color: #aa8247;
 }
+
+/* Visual pass: clearer hierarchy, calmer surfaces, and more deliberate spacing. */
+:root {
+  --navy: #17395b;
+  --ink: #263a50;
+  --muted: #74869a;
+  --line: #e3eaf1;
+  --bg: #f5f7fa;
+  --blue: #3979c6;
+  --pale: #eaf2fb;
+  --green: #25845f;
+  --amber: #b77b18;
+  --red: #b34f55;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.55;
+  letter-spacing: 0.005em;
+}
+.demo {
+  min-height: 36px;
+  height: auto;
+  padding: 7px 25px;
+  background: #18344f;
+}
+.local-banner { background: #244a43; }
+.layout { grid-template-columns: 224px minmax(0, 1fr); }
+aside {
+  padding: 28px 15px;
+  background: #fbfcfd;
+  border-color: #e4eaf0;
+}
+.brand {
+  padding: 0 14px 32px;
+  font-size: 20px;
+  letter-spacing: -0.65px;
+}
+.nav { gap: 7px; }
+.nav button {
+  min-height: 44px;
+  border-radius: 11px;
+  color: #64788c;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+.nav button:hover:not(.active) { background: #f0f4f8; color: var(--navy); }
+.nav button.active {
+  background: #eaf2fb;
+  color: var(--navy);
+  box-shadow: inset 3px 0 #4e83c2;
+}
+.nav .icon { color: #8297ad; }
+.main { max-width: 1320px; padding: 34px 42px 60px; }
+.header { margin-bottom: 26px; }
+.kicker { color: #8191a3; font-size: 12px; letter-spacing: 0.015em; }
+h1 { color: #17395b; font-size: 28px; letter-spacing: -0.7px; margin-top: 5px; }
+.btn {
+  border-color: #dce5ed;
+  border-radius: 10px;
+  padding: 9px 15px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 14px #17334d12; }
+.btn.primary { background: #1c4267; border-color: #1c4267; }
+.btn.primary:hover:not(:disabled) { background: #28567f; }
+.panel { border-color: #e4eaf0; border-radius: 16px; box-shadow: 0 4px 16px #18344f08; }
+.hero { grid-template-columns: 1fr 1fr; gap: 34px; padding: 28px 30px; margin-bottom: 22px; }
+.hero-label { font-size: 12px; font-weight: 550; color: #788ba0; }
+.hero-value { font-size: 42px; letter-spacing: -1.7px; margin: 10px 0 5px; }
+.chart { height: 144px; }
+.chart .line { stroke: #4b83cc; stroke-width: 3; }
+.sectionhead { margin: 28px 1px 12px; }
+.sectionhead h2 { font-size: 17px; letter-spacing: -0.2px; }
+.sectionhead p { color: #8493a4; }
+.overviewgrid, .investgrid, .import-layout { gap: 17px; }
+.panelpad { padding: 21px 23px; }
+.panel-title { font-size: 14px; letter-spacing: -0.1px; margin-bottom: 16px; }
+.account-line { border-color: #edf1f5; padding: 12px 0; }
+.logo { border-radius: 10px; background: #edf3f9; color: #496e98; }
+.account-name { color: #30465e; }
+.amount { color: #263d56; }
+.group-title { margin-top: 25px; }
+.invest-account { border-color: #e6edf3; border-radius: 12px; background: #fcfdfe; padding: 14px; }
+.table th {
+  background: #f8fafc;
+  color: #788a9e;
+  font-size: 10px;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+.table th:first-child { border-radius: 8px 0 0; }
+.table th:last-child { border-radius: 0 8px 0 0; }
+.table td { color: #3d5167; }
+.table tr:last-child td { border-bottom-color: transparent; }
+.tag { font-weight: 600; padding: 3px 9px; }
+.upload {
+  border-color: #a9bfd7;
+  background: #f8fbfe;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.upload:hover { border-color: #5f8fc5; background: #f1f7fd; }
+.import-tabs, .period-toggle { background: #edf2f6; }
+.import-tabs button.active, .period-toggle button.active { box-shadow: 0 1px 4px #17334d18; }
+.modalbox { border: 1px solid #e5ebf1; }
+.modalbox input, .modalbox select {
+  border-color: #dce5ed;
+  border-radius: 9px;
+  min-height: 42px;
+}
+.formgrid label { color: #64788d; font-weight: 550; }
+.notification { border-radius: 13px; box-shadow: 0 12px 34px #18344f24; }
+.main-footer { border-color: #e2e9f0; }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline-color: #4c88cf; }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  aside { background: #fbfcfd; }
+  .main { padding: 28px 24px 48px; }
+}
+@media (max-width: 560px) {
+  .demo { padding: 7px 13px; font-size: 10px; }
+  .layout aside { gap: 8px; overflow-x: auto; }
+  .brand { font-size: 17px; padding: 0 5px; }
+  .nav { gap: 2px; }
+  .nav button { min-height: 38px; white-space: nowrap; font-size: 11px; }
+  .nav button.active { box-shadow: inset 0 -2px #4e83c2; }
+  .main { padding: 22px 14px 38px; }
+  h1 { font-size: 25px; }
+  .hero { padding: 20px; }
+  .hero-value { font-size: 36px; }
+  .panelpad { padding: 17px; }
+  .actions .btn { flex: 1; padding-inline: 9px; }
+}
