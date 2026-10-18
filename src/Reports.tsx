@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import {
-  accountAt,
+  activeAccounts,
   cad,
   confirmRecords,
   id,
@@ -24,7 +24,15 @@ import {
   type Field,
 } from "./importers";
 import { FxFields, PositionRows, newPosition, positionErrors } from "./Editors";
-import { Empty, Modal, Section, money, signed, type Commit } from "./ui";
+import {
+  CancelButton,
+  Empty,
+  Modal,
+  Section,
+  money,
+  signed,
+  type Commit,
+} from "./ui";
 interface ReviewData {
   source: Source;
   filename: string;
@@ -116,12 +124,15 @@ export function Reports({
   }
   function cancelReview() {
     if (review) {
-      commit({
-        ...state,
-        imports: state.imports.map((i) =>
-          i.id === review.id ? { ...i, status: "cancelled" } : i,
-        ),
-      });
+      commit(
+        {
+          ...state,
+          imports: state.imports.map((i) =>
+            i.id === review.id ? { ...i, status: "cancelled" } : i,
+          ),
+        },
+        "已取消导入，未保存余额或持仓。",
+      );
       setReview(null);
     }
   }
@@ -386,14 +397,16 @@ function ImportReview({
   onDone: () => void;
   onAddAccount: () => void;
 }) {
-  const initial =
+  const [initial] = useState(() =>
     data.source === "CSV" && data.extracted.data.length
       ? mapRows(data.extracted)
-      : { positions: data.extracted.positions, warnings: [] };
+      : { positions: data.extracted.positions, warnings: [] },
+  );
   const [extracted, setExtracted] = useState(data.extracted),
     [rows, setRows] = useState<Position[]>(initial.positions),
     [rowWarnings, setRowWarnings] = useState(initial.warnings);
-  const candidates = state.accounts.filter(
+  const accounts = activeAccounts(state);
+  const candidates = accounts.filter(
     (a) =>
       a.type === "investment" &&
       a.institution.toLowerCase() ===
@@ -411,7 +424,7 @@ function ImportReview({
     [mode, setMode] = useState<"replace" | "keep">("replace"),
     [checked, setChecked] = useState(false),
     [error, setError] = useState("");
-  const selected = state.accounts.find((a) => a.id === accountId);
+  const selected = accounts.find((a) => a.id === accountId);
   const conflicts = [...state.balances, ...state.positionSets].filter(
     (r) =>
       r.accountId === accountId &&
@@ -561,6 +574,10 @@ function ImportReview({
       title="核对并确认导入"
       subtitle={`${data.filename} · 确认前不会更新余额和持仓`}
       onClose={onClose}
+      dirty={
+        data.source !== "manual" ||
+        JSON.stringify(rows) !== JSON.stringify(initial.positions)
+      }
       wide
     >
       <form
@@ -591,7 +608,7 @@ function ImportReview({
               value={accountId}
               onChange={(e) => {
                 setAccountId(e.target.value);
-                const a = state.accounts.find((a) => a.id === e.target.value);
+                const a = accounts.find((a) => a.id === e.target.value);
                 setRows(
                   rows.map((p) => ({
                     ...p,
@@ -601,7 +618,7 @@ function ImportReview({
               }}
             >
               <option value="">请选择投资账户</option>
-              {state.accounts
+              {accounts
                 .filter((a) => a.type === "investment")
                 .map((a) => (
                   <option key={a.id} value={a.id}>
@@ -773,9 +790,7 @@ function ImportReview({
           </p>
         )}
         <div className="modal-actions sticky-actions">
-          <button type="button" className="btn" onClick={onClose}>
-            取消导入
-          </button>
+          <CancelButton>取消导入</CancelButton>
           <button
             className="btn primary"
             disabled={!rows.length || !checked || blockingSource.length > 0}

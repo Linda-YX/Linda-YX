@@ -1,7 +1,11 @@
 import { useState } from "react";
 import {
   TYPES,
+  activeAccounts,
+  archiveAccount,
   confirmRecords,
+  deleteAccount,
+  hasAccountHistory,
   id,
   isDebt,
   today,
@@ -13,7 +17,7 @@ import {
   type State,
 } from "./model";
 import { validDate } from "./importers";
-import { Modal, type Commit, money } from "./ui";
+import { CancelButton, Modal, type Commit, money } from "./ui";
 export function FxFields({
   value,
   onChange,
@@ -179,9 +183,7 @@ export function AccountEditor({
           </p>
         )}
         <div className="modal-actions">
-          <button type="button" className="btn" onClick={onClose}>
-            取消
-          </button>
+          <CancelButton />
           <button className="btn primary">添加账户</button>
         </div>
       </form>
@@ -201,14 +203,15 @@ export function BalanceEditor({
   onClose: () => void;
   onAdd: () => void;
 }) {
+  const accounts = activeAccounts(state);
   const [accountId, setAccountId] = useState(
-      account?.id || state.accounts[0]?.id || "",
+      account?.id || accounts[0]?.id || "",
     ),
     [date, setDate] = useState(today()),
     [fx, setFx] = useState<FX>({}),
     [error, setError] = useState(""),
     [mode, setMode] = useState<"replace" | "keep">("replace");
-  const selected = state.accounts.find((a) => a.id === accountId);
+  const selected = accounts.find((a) => a.id === accountId);
   const existing = state.balances.filter(
     (b) =>
       b.accountId === accountId &&
@@ -222,10 +225,11 @@ export function BalanceEditor({
       subtitle="保存为新的已确认快照，保留历史记录"
       onClose={onClose}
     >
-      {!state.accounts.length ? (
+      {!accounts.length ? (
         <>
           <div className="toast">先添加一个账户，再记录余额。</div>
           <div className="modal-actions">
+            <CancelButton />
             <button className="btn primary" onClick={onAdd}>
               ＋ 添加账户
             </button>
@@ -289,7 +293,7 @@ export function BalanceEditor({
                   setFx({});
                 }}
               >
-                {state.accounts.map((a) => (
+                {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.institution} · {a.name} ({a.currency})
                   </option>
@@ -362,15 +366,73 @@ export function BalanceEditor({
             </p>
           )}
           <div className="modal-actions">
-            <button className="btn" type="button" onClick={onClose}>
-              取消
-            </button>
+            <CancelButton />
             <button className="btn primary" disabled={!selected}>
               确认保存余额
             </button>
           </div>
         </form>
       )}
+    </Modal>
+  );
+}
+export function AccountAction({
+  state,
+  account,
+  commit,
+  onClose,
+}: {
+  state: State;
+  account: Account;
+  commit: Commit;
+  onClose: () => void;
+}) {
+  const [error, setError] = useState("");
+  const archive = hasAccountHistory(state, account.id);
+  const label = archive ? "归档" : "删除";
+  return (
+    <Modal
+      title={`${label}账户`}
+      subtitle={`${account.institution} · ${account.name}`}
+      onClose={onClose}
+    >
+      <div className="warning">
+        {archive
+          ? "账户将立即退出当前账户列表和合计。余额、持仓、导入与审计历史全部保留，可在“已归档账户”查看。历史图表保留归档当天及之前的快照；之后日期的快照不再计入此账户。"
+          : "此账户没有余额或持仓历史。确认后仅删除这个空账户，不清除其他账户或任何导入、审计记录。"}
+      </div>
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="modal-actions">
+        <CancelButton />
+        <button
+          type="button"
+          className="btn danger"
+          onClick={() => {
+            try {
+              const next = archive
+                ? archiveAccount(state, account.id)
+                : deleteAccount(state, account.id);
+              if (
+                commit(
+                  next,
+                  `${account.institution} · ${account.name} 已${label}${archive ? "；历史记录已保留。" : "。"}`,
+                )
+              )
+                onClose();
+            } catch (e) {
+              setError(
+                e instanceof Error ? e.message : "操作失败，未更改账户。",
+              );
+            }
+          }}
+        >
+          确认{label}账户
+        </button>
+      </div>
     </Modal>
   );
 }

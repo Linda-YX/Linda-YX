@@ -1,6 +1,8 @@
 import { useId, useState } from "react";
 import {
   accountAt,
+  activeAccounts,
+  hasAccountHistory,
   change,
   combinedHoldings,
   comparisonDate,
@@ -131,7 +133,15 @@ export function NetWorth({ state }: Props) {
     h = history(state),
     current = h.at(-1),
     previous = h.length > 1 ? h.at(-2) : null;
-  const delta = current && previous ? current.net - previous.net : null;
+  const scopeChanged = [current, previous].some(
+    (point) =>
+      point &&
+      point.accounts.some(
+        (a) => !t.accounts.some((b) => b.account.id === a.account.id),
+      ),
+  );
+  const delta =
+    current && previous && !scopeChanged ? current.net - previous.net : null;
   return (
     <>
       <div className="panel hero">
@@ -143,9 +153,17 @@ export function NetWorth({ state }: Props) {
             {money(t.net)}
           </div>
           <div className={delta !== null && delta < 0 ? "negative" : "change"}>
-            {delta === null ? "记录快照，开始追踪变化" : `${signed(delta)}`}
+            {scopeChanged
+              ? "归档已调整当前统计范围"
+              : delta === null
+                ? "记录快照，开始追踪变化"
+                : `${signed(delta)}`}
             <span className="period">
-              {previous ? `较 ${previous.date} 快照` : "暂无可比较历史"}
+              {scopeChanged
+                ? "历史图表保留原快照"
+                : previous
+                  ? `较 ${previous.date} 快照`
+                  : "暂无可比较历史"}
             </span>
           </div>
           <div className="balance-split">
@@ -189,6 +207,8 @@ export function Quality({ state }: Props) {
       {t.missing.length > 0 &&
         ` · ${t.missing.length} 个账户未录入或缺少汇率，未计入合计`}
       {stale.length > 0 && ` · ${stale.length} 个账户超过 30 天未更新`}
+      {state.accounts.some((a) => a.status === "archived") &&
+        " · 已归档账户不计入当前合计，历史按归档日期保留"}
       {mismatch.length > 0 && (
         <span className="negative">
           {" "}
@@ -202,10 +222,12 @@ export function AccountLine({
   state,
   account,
   onEdit,
+  onManage,
 }: {
   state: State;
   account: Account;
   onEdit?: (a: Account) => void;
+  onManage?: (a: Account) => void;
 }) {
   const a = accountAt(state, account),
     debt = isDebt(account);
@@ -235,6 +257,9 @@ export function AccountLine({
             {account.institution} · {account.name}{" "}
             {account.status === "closed" && (
               <span className="method-badge">已关闭</span>
+            )}
+            {account.status === "archived" && (
+              <span className="tag neutral">已归档</span>
             )}
           </div>
           <div className="account-sub">
@@ -266,6 +291,16 @@ export function AccountLine({
             记录余额
           </button>
         )}
+        {onManage && (
+          <button
+            type="button"
+            className="smalllink edit-link negative"
+            aria-label={`${hasAccountHistory(state, account.id) ? "归档" : "删除"}账户 ${account.institution} · ${account.name}`}
+            onClick={() => onManage(account)}
+          >
+            {hasAccountHistory(state, account.id) ? "归档账户" : "删除账户"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -277,6 +312,7 @@ export function Overview({
   state: State;
   go: (page: string) => void;
 }) {
+  const currentAccounts = activeAccounts(state);
   const t = totals(state),
     [period, setPeriod] = useState<"quarter" | "year">("year");
   const top = combinedHoldings(state).slice(0, 3);
@@ -286,7 +322,7 @@ export function Overview({
     .at(-1);
   const cut = latest ? comparisonDate(latest, period) : "";
   const previous = combinedHoldings(state, cut);
-  const investment = state.accounts
+  const investment = currentAccounts
     .filter((a) => a.type === "investment")
     .reduce((s, a) => s + (accountAt(state, a).value ?? 0), 0);
   return (
@@ -307,12 +343,12 @@ export function Overview({
             <span>资产账户</span>
             <strong>{money(t.assets)}</strong>
           </div>
-          {state.accounts
+          {currentAccounts
             .filter((a) => a.type === "cash")
             .map((a) => (
               <AccountLine key={a.id} state={state} account={a} />
             ))}
-          {state.accounts.some((a) => a.type === "investment") && (
+          {currentAccounts.some((a) => a.type === "investment") && (
             <div className="account-line">
               <div className="account-id">
                 <span className="logo">INV</span>
@@ -320,7 +356,7 @@ export function Overview({
                   <div className="account-name">
                     投资账户　
                     {
-                      state.accounts.filter((a) => a.type === "investment")
+                      currentAccounts.filter((a) => a.type === "investment")
                         .length
                     }{" "}
                     个
@@ -331,7 +367,7 @@ export function Overview({
               <div className="amount">{money(investment)}</div>
             </div>
           )}
-          {!state.accounts.length && (
+          {!currentAccounts.length && (
             <Empty>添加现金或投资账户，开始建立资产概览。</Empty>
           )}
         </section>
@@ -345,7 +381,7 @@ export function Overview({
             { label: "学生贷款", types: ["federal", "alberta", "quebec"] },
             { label: "其他贷款", types: ["loan"] },
           ].map((group) => {
-            const accounts = state.accounts.filter((a) =>
+            const accounts = currentAccounts.filter((a) =>
               group.types.includes(a.type),
             );
             return (
@@ -370,7 +406,7 @@ export function Overview({
               )
             );
           })}
-          {!state.accounts.some(isDebt) && (
+          {!currentAccounts.some(isDebt) && (
             <Empty>信用卡与学生贷款会在这里分开统计。</Empty>
           )}
           <div className="legendnote">负债按正数记录欠款，在净资产中扣除。</div>
@@ -445,15 +481,78 @@ export function Overview({
     </>
   );
 }
+
+function AccountHistory({
+  state,
+  account: a,
+}: {
+  state: State;
+  account: Account;
+}) {
+  return (
+    <details className="disclosure account-history">
+      <summary>{TYPES[a.type]} · 查看余额 / 持仓快照历史</summary>
+      <div className="table-scroll">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>来源</th>
+              <th className="right">原币金额</th>
+              <th>状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ...state.balances
+                .filter((r) => r.accountId === a.id)
+                .map((r) => ({
+                  ...r,
+                  description: money(r.amount, r.currency),
+                })),
+              ...state.positionSets
+                .filter((r) => r.accountId === a.id)
+                .map((r) => ({
+                  ...r,
+                  description: `${r.positions.length} 笔持仓 + ${money(r.cash, r.currency)} 现金`,
+                })),
+            ]
+              .sort(
+                (x, y) =>
+                  y.date.localeCompare(x.date) ||
+                  y.createdAt.localeCompare(x.createdAt),
+              )
+              .map((r) => (
+                <tr key={r.id}>
+                  <td>{r.date}</td>
+                  <td>{r.source}</td>
+                  <td className="right">{r.description}</td>
+                  <td>
+                    <span className={`tag ${r.supersededBy ? "neutral" : ""}`}>
+                      {r.supersededBy ? "已替换 · 保留审计" : "已确认"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  );
+}
 export function Accounts({
   state,
   onAdd,
   onEdit,
+  onManage,
 }: {
   state: State;
   onAdd: () => void;
   onEdit: (a: Account) => void;
+  onManage: (a: Account) => void;
 }) {
+  const currentAccounts = activeAccounts(state);
+  const archived = state.accounts.filter((a) => a.status === "archived");
   const groups = [
     { label: "现金与存款", types: ["cash"] },
     { label: "投资账户", types: ["investment"] },
@@ -473,7 +572,7 @@ export function Accounts({
           </button>
         }
       />
-      {!state.accounts.length && (
+      {!currentAccounts.length && (
         <section className="panel">
           <Empty>
             还没有账户。点击“添加账户”，只需昵称和机构，无需账号或银行卡号。
@@ -481,7 +580,9 @@ export function Accounts({
         </section>
       )}
       {groups.map((g) => {
-        const accounts = state.accounts.filter((a) => g.types.includes(a.type));
+        const accounts = currentAccounts.filter((a) =>
+          g.types.includes(a.type),
+        );
         return (
           accounts.length > 0 && (
             <section key={g.label} className="panel panelpad account-group">
@@ -500,8 +601,17 @@ export function Accounts({
               {accounts.map((a) => {
                 const info = accountAt(state, a);
                 return (
-                  <div key={a.id}>
-                    <AccountLine state={state} account={a} onEdit={onEdit} />
+                  <div
+                    key={a.id}
+                    className="account-entry"
+                    data-account-id={a.id}
+                  >
+                    <AccountLine
+                      state={state}
+                      account={a}
+                      onEdit={onEdit}
+                      onManage={onManage}
+                    />
                     {info.discrepancy !== null &&
                       Math.abs(info.discrepancy) > 0.01 && (
                         <div className="performance-note">
@@ -509,60 +619,7 @@ export function Accounts({
                           ；净资产使用账户总额，不会重复相加。
                         </div>
                       )}
-                    <details className="disclosure account-history">
-                      <summary>
-                        {TYPES[a.type]} · 查看余额 / 持仓快照历史
-                      </summary>
-                      <div className="table-scroll">
-                        <table className="table">
-                          <thead>
-                            <tr>
-                              <th>日期</th>
-                              <th>来源</th>
-                              <th className="right">原币金额</th>
-                              <th>状态</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {[
-                              ...state.balances
-                                .filter((r) => r.accountId === a.id)
-                                .map((r) => ({
-                                  ...r,
-                                  description: money(r.amount, r.currency),
-                                })),
-                              ...state.positionSets
-                                .filter((r) => r.accountId === a.id)
-                                .map((r) => ({
-                                  ...r,
-                                  description: `${r.positions.length} 笔持仓 + ${money(r.cash, r.currency)} 现金`,
-                                })),
-                            ]
-                              .sort(
-                                (x, y) =>
-                                  y.date.localeCompare(x.date) ||
-                                  y.createdAt.localeCompare(x.createdAt),
-                              )
-                              .map((r) => (
-                                <tr key={r.id}>
-                                  <td>{r.date}</td>
-                                  <td>{r.source}</td>
-                                  <td className="right">{r.description}</td>
-                                  <td>
-                                    <span
-                                      className={`tag ${r.supersededBy ? "neutral" : ""}`}
-                                    >
-                                      {r.supersededBy
-                                        ? "已替换 · 保留审计"
-                                        : "已确认"}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </details>
+                    <AccountHistory state={state} account={a} />
                   </div>
                 );
               })}
@@ -570,6 +627,23 @@ export function Accounts({
           )
         );
       })}
+      {archived.length > 0 && (
+        <section className="panel panelpad archived-accounts">
+          <h2 className="panel-title">已归档账户 · {archived.length}</h2>
+          <p className="invest-meta">
+            下列为保留的历史余额，不计入当前合计；历史图表保留归档当日及之前的快照。
+          </p>
+          {archived.map((a) => (
+            <div key={a.id} className="account-entry" data-account-id={a.id}>
+              <AccountLine state={state} account={a} />
+              <div className="account-sub">
+                归档日期：{a.archivedOn || a.archivedAt?.slice(0, 10)}
+              </div>
+              <AccountHistory state={state} account={a} />
+            </div>
+          ))}
+        </section>
+      )}
       <div className="legendnote">
         净资产 = 现金与存款 + 投资账户 − 信用卡欠款 − 学生贷款及其他贷款。
       </div>
@@ -586,7 +660,7 @@ export function Investments({
   const [period, setPeriod] = useState<"quarter" | "year">("year"),
     [platform, setPlatform] = useState("all"),
     [type, setType] = useState("all");
-  const accounts = state.accounts.filter((a) => a.type === "investment");
+  const accounts = activeAccounts(state).filter((a) => a.type === "investment");
   const dated = accounts.map((a) => accountAt(state, a)).filter((a) => a.date);
   const end = dated
     .map((a) => a.date!)
@@ -608,7 +682,9 @@ export function Investments({
     current.every((a) => a.current.value !== null) ? total : null,
     prior,
   );
-  const investmentIds = new Set(accounts.map((a) => a.id));
+  const investmentIds = new Set(
+    state.accounts.filter((a) => a.type === "investment").map((a) => a.id),
+  );
   const investmentDates = [
     ...new Set(
       [...state.balances, ...state.positionSets]
@@ -674,13 +750,15 @@ export function Investments({
               .filter((date) => !start || date >= start)
               .map((date) => ({
                 date,
-                net: accounts.reduce(
-                  (s, a) => s + (accountAt(state, a, date).value ?? 0),
-                  0,
-                ),
-                missing: accounts.filter(
-                  (a) => accountAt(state, a, date).value === null,
-                ),
+                net: activeAccounts(state, date)
+                  .filter((a) => a.type === "investment")
+                  .reduce(
+                    (s, a) => s + (accountAt(state, a, date).value ?? 0),
+                    0,
+                  ),
+                missing: activeAccounts(state, date)
+                  .filter((a) => a.type === "investment")
+                  .filter((a) => accountAt(state, a, date).value === null),
               }))}
             label="投资账户已确认金额历史"
           />

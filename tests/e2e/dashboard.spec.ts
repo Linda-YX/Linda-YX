@@ -124,6 +124,10 @@ test("cancelling an import does not change confirmed holdings", async ({
     .getByRole("dialog")
     .getByRole("button", { name: "取消导入" })
     .click();
+  await page
+    .getByRole("dialog", { name: "放弃未保存的内容？", exact: true })
+    .getByRole("button", { name: "放弃更改并关闭" })
+    .click();
   const s = await saved(page);
   expect(s.positionSets).toHaveLength(8);
   expect(s.imports[0].status).toBe("cancelled");

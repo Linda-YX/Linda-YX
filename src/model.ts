@@ -14,7 +14,9 @@ export interface Account {
   institution: string;
   type: AccountType;
   currency: Currency;
-  status: "active" | "closed";
+  status: "active" | "closed" | "archived";
+  archivedAt?: string;
+  archivedOn?: string;
 }
 export interface FX {
   rate?: number;
@@ -111,6 +113,67 @@ export const emptyState = (): State => ({
   imports: [],
   audit: [],
 });
+// Date-only history keeps the archive day's saved valuations. Current totals
+// exclude an archived account immediately; later valuation dates exclude it too.
+export function activeAccounts(state: State, date = "9999-12-31") {
+  return state.accounts.filter(
+    (a) =>
+      a.status !== "archived" ||
+      date <= (a.archivedOn || a.archivedAt?.slice(0, 10) || ""),
+  );
+}
+export function hasAccountHistory(state: State, accountId: string) {
+  return (
+    state.balances.some((r) => r.accountId === accountId) ||
+    state.positionSets.some((r) => r.accountId === accountId)
+  );
+}
+export function deleteAccount(state: State, accountId: string): State {
+  const account = state.accounts.find((a) => a.id === accountId);
+  if (!account) throw new Error("账户不存在，请刷新后重试。");
+  if (hasAccountHistory(state, accountId))
+    throw new Error("此账户已有历史记录，只能归档，不能删除。");
+  return {
+    ...state,
+    accounts: state.accounts.filter((a) => a.id !== accountId),
+    audit: [
+      ...state.audit,
+      {
+        id: id(),
+        at: new Date().toISOString(),
+        action: `删除空账户：${account.institution} · ${account.name}`,
+        recordIds: [accountId],
+      },
+    ],
+  };
+}
+export function archiveAccount(
+  state: State,
+  accountId: string,
+  at = new Date().toISOString(),
+  on = today(),
+): State {
+  const account = state.accounts.find((a) => a.id === accountId);
+  if (!account) throw new Error("账户不存在，请刷新后重试。");
+  if (account.status === "archived") throw new Error("此账户已归档。");
+  return {
+    ...state,
+    accounts: state.accounts.map((a) =>
+      a.id === accountId
+        ? { ...a, status: "archived", archivedAt: at, archivedOn: on }
+        : a,
+    ),
+    audit: [
+      ...state.audit,
+      {
+        id: id(),
+        at,
+        action: `归档账户：${account.institution} · ${account.name}`,
+        recordIds: [accountId],
+      },
+    ],
+  };
+}
 export function cad(amount: number, currency: string, fx: FX): number | null {
   if (!Number.isFinite(amount)) return null;
   if (currency === "CAD" || amount === 0) return amount;
@@ -177,7 +240,9 @@ export function accountAt(state: State, account: Account, date = "9999-12-31") {
   };
 }
 export function totals(state: State, date = "9999-12-31") {
-  const accounts = state.accounts.map((a) => accountAt(state, a, date));
+  const accounts = activeAccounts(state, date).map((a) =>
+    accountAt(state, a, date),
+  );
   const assets = accounts
     .filter((a) => !isDebt(a.account))
     .reduce((s, a) => s + (a.value ?? 0), 0);
@@ -237,7 +302,7 @@ export function change(current: number | null, previous: number | null) {
 export const securityKey = (p: Position) =>
   (p.ticker.trim() || p.name.trim()).normalize("NFKC").toLocaleUpperCase();
 export function holdings(state: State, date = "9999-12-31") {
-  return state.accounts
+  return activeAccounts(state, date)
     .filter((a) => a.type === "investment")
     .flatMap((a) => {
       const set = accountAt(state, a, date).set;
@@ -319,6 +384,9 @@ export function confirmRecords(
 ): State {
   if (!balance && !set) throw new Error("没有可保存的记录");
   const record = balance || set!;
+  const account = state.accounts.find((a) => a.id === record.accountId);
+  if (!account || account.status === "archived")
+    throw new Error("账户不存在或已归档，不能添加快照。");
   const prior = [
     ...(balance ? state.balances : []),
     ...(set ? state.positionSets : []),

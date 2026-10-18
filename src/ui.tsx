@@ -1,4 +1,12 @@
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { State } from "./model";
 export type Commit = (next: State, message?: string) => boolean;
 export const money = (n: number | null, currency = "CAD") =>
@@ -22,19 +30,32 @@ export const COLORS = [
   "#8aa6be",
   "#bdc7d4",
 ];
+const CloseModal = createContext<(() => void) | undefined>(undefined);
+export function CancelButton({ children = "取消" }: { children?: ReactNode }) {
+  const close = useContext(CloseModal);
+  return (
+    <button type="button" className="btn" onClick={close}>
+      {children}
+    </button>
+  );
+}
 export function Modal({
   title,
   subtitle,
   children,
   onClose,
   wide = false,
+  dirty = false,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
+  dirty?: boolean;
 }) {
+  const [edited, setEdited] = useState(false);
+  const [discardPrompt, setDiscardPrompt] = useState(false);
   const ref = useRef<HTMLDialogElement>(null),
     label = useId();
   useEffect(() => {
@@ -42,14 +63,24 @@ export function Modal({
     dialog.showModal();
     return () => dialog.close();
   }, []);
+  function requestClose() {
+    if (dirty || edited) setDiscardPrompt(true);
+    else onClose();
+  }
   return (
     <dialog
       ref={ref}
       className={`dialog ${wide ? "wide" : ""}`}
       aria-labelledby={label}
-      onCancel={onClose}
+      onCancel={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        requestClose();
+      }}
+      onInputCapture={() => setEdited(true)}
+      onChangeCapture={() => setEdited(true)}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) requestClose();
       }}
     >
       <div className="modalbox">
@@ -61,14 +92,39 @@ export function Modal({
           <button
             type="button"
             className="close"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="关闭"
           >
             ×
           </button>
         </div>
-        {children}
+        <CloseModal.Provider value={requestClose}>
+          {children}
+        </CloseModal.Provider>
       </div>
+      {discardPrompt && (
+        <Modal
+          title="放弃未保存的内容？"
+          onClose={() => setDiscardPrompt(false)}
+        >
+          <p className="warning">
+            这些内容尚未保存或提交。选择“放弃更改并关闭”会丢弃本次输入，不会保存余额、账户或持仓。
+          </p>
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="btn"
+              autoFocus
+              onClick={() => setDiscardPrompt(false)}
+            >
+              继续编辑
+            </button>
+            <button type="button" className="btn danger" onClick={onClose}>
+              放弃更改并关闭
+            </button>
+          </div>
+        </Modal>
+      )}
     </dialog>
   );
 }

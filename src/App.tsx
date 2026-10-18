@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AccountEditor, BalanceEditor } from "./Editors";
+import { AccountAction, AccountEditor, BalanceEditor } from "./Editors";
 import { Accounts, Investments, Overview } from "./Dashboard";
 import { Reports } from "./Reports";
 import {
@@ -36,7 +36,7 @@ export default function App() {
     [loadError, setLoadError] = useState(loaded.error),
     [page, setPage] = useState("overview"),
     [modal, setModal] = useState<
-      "balance" | "account" | "delete" | "demo" | null
+      "balance" | "account" | "account-action" | "delete" | "demo" | null
     >(null),
     [selected, setSelected] = useState<Account>(),
     [notice, setNotice] = useState(""),
@@ -224,6 +224,10 @@ export default function App() {
                 setSelected(a);
                 setModal("balance");
               }}
+              onManage={(a) => {
+                setSelected(a);
+                setModal("account-action");
+              }}
             />
           )}
           {page === "investments" && (
@@ -263,6 +267,14 @@ export default function App() {
       {modal === "account" && (
         <AccountEditor
           state={state}
+          commit={commit}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === "account-action" && selected && (
+        <AccountAction
+          state={state}
+          account={selected}
           commit={commit}
           onClose={() => setModal(null)}
         />
