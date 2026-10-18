@@ -94,9 +94,9 @@ npm audit
 
 在 `/workspace/Linda-YX` 执行上述命令。本环境若默认 npm 缓存目录不可写，可使用 `npm ci --cache /workspace/.npm-cache`。任务已经处于隔离环境中，沿用现有 checkout，无需创建 Git worktree。
 
-## 本地待审查修复
+## 已审查的基础功能修复
 
-弹窗关闭及账户归档／删除的修复说明、复现结果和本地检查步骤见 [本地审查记录](docs/LOCAL_REVIEW.md)。本次修复不自动部署；确认审查通过后再发布。
+弹窗关闭及账户归档／删除的修复说明、复现结果和本地检查步骤见 [本地审查记录](docs/LOCAL_REVIEW.md)。本次修复已获用户确认发布；后续改动应先审查再部署。
 
 ## GitHub Pages 发布
 
