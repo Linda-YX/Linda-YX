@@ -1,0 +1,3 @@
+security_name,ticker,type,units,price,market_value,currency,report_date,institution,account,sector,region,classification_source,classification_date
+Fictional Technology ETF,DEMO-TECH,ETF,100,50,5000,CAD,2026-10-07,Wealthsimple,TFSA,信息科技,美国,Fictional example only,2026-10-07
+Fictional Balanced Fund,DEMO-BAL,共同基金,50,40,2000,CAD,2026-10-07,Wealthsimple,TFSA,,,,
