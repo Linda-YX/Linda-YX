@@ -12,11 +12,52 @@ import {
 } from "./model";
 import { Modal } from "./ui";
 const PAGES = [
-  { id: "overview", title: "总览", icon: "◉" },
-  { id: "accounts", title: "账户", icon: "▤" },
-  { id: "investments", title: "投资组合", icon: "◔" },
-  { id: "reports", title: "报告导入", icon: "⇧" },
+  { id: "overview", title: "总览", navLabel: "财务总览" },
+  { id: "accounts", title: "账户", navLabel: "我的账户" },
+  { id: "investments", title: "投资组合", navLabel: "投资分析" },
+  { id: "reports", title: "报告导入", navLabel: "数据导入" },
 ];
+function NavigationIcon({ page }: { page: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.85"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      focusable="false"
+    >
+      {page === "overview" ? (
+        <>
+          {[
+            [3, 3],
+            [14, 3],
+            [3, 14],
+            [14, 14],
+          ].map(([x, y]) => (
+            <rect key={`${x}-${y}`} x={x} y={y} width="7" height="7" rx="1" />
+          ))}
+        </>
+      ) : page === "accounts" ? (
+        <>
+          <path d="M20 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h15a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2H5a2 2 0 0 1 0-4" />
+          <path d="M16 14h.01" />
+        </>
+      ) : page === "investments" ? (
+        <>
+          <path d="M3 3v18h18" />
+          <path d="m7 16 5-5 3 3 6-7" />
+        </>
+      ) : (
+        <>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <path d="M14 2v6h6M12 18v-7m-3 3 3-3 3 3" />
+        </>
+      )}
+    </svg>
+  );
+}
 function initial() {
   try {
     return { state: loadState(), error: "" };
@@ -133,6 +174,9 @@ export default function App() {
       <div className="layout">
         <aside>
           <div className="brand">
+            <span className="brand-mark" aria-hidden="true">
+              ↗
+            </span>
             finances<i>.</i>
           </div>
           <nav className="nav" aria-label="主要导航">
@@ -144,9 +188,9 @@ export default function App() {
                 onClick={() => go(p.id)}
               >
                 <span className="icon" aria-hidden="true">
-                  {p.icon}
+                  <NavigationIcon page={p.id} />
                 </span>
-                {p.title}
+                {p.navLabel}
               </button>
             ))}
           </nav>
