@@ -1736,3 +1736,137 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline-color: #4
   .panelpad { padding: 17px; }
   .actions .btn { flex: 1; padding-inline: 9px; }
 }
+
+/* Overview refinement: bring the financial story forward without adding cards. */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(108deg, #fff 0%, #fff 47%, #f8fbfe 100%);
+  border-color: #dfe8f1;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, #4d86c7, #8eb4da);
+}
+.hero > div:first-child { padding-left: 5px; }
+.hero-label {
+  color: #617991;
+  font-weight: 600;
+}
+.hero-value {
+  font-size: clamp(38px, 3.2vw, 46px);
+  color: #163b60;
+}
+.change,
+.period { line-height: 1.6; }
+.balance-split {
+  gap: 24px;
+  margin-top: 21px;
+  padding-top: 17px;
+}
+.balance-split > div { min-width: 0; }
+.split-label {
+  color: #72859a;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.035em;
+}
+.split-value {
+  font-size: 19px;
+  letter-spacing: -0.3px;
+}
+.chart { margin-top: 7px; }
+.chart-labels { color: #788ba0; }
+.data-note {
+  color: #62778e;
+  font-size: 11px;
+  margin: -8px 4px 17px;
+}
+.sectionhead {
+  align-items: center;
+  border-left: 3px solid #9ab8d7;
+  padding-left: 12px;
+}
+.sectionhead h2 {
+  color: #1b3e61;
+  font-size: 18px;
+}
+.sectionhead p {
+  color: #6d8197;
+  font-size: 12px;
+}
+.overviewgrid > .panel {
+  box-shadow: 0 5px 18px #17334d0a;
+}
+.snapshot-total {
+  align-items: baseline;
+  padding: 5px 0 14px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid #e8eef4;
+  color: #536c84;
+  font-weight: 600;
+}
+.snapshot-total strong {
+  color: #1a3d60;
+  font-size: 18px;
+  letter-spacing: -0.2px;
+}
+.snapshot-total .amount.debt { color: #a64f54; }
+.debt-block {
+  margin-top: 12px;
+  padding-top: 11px;
+}
+.debt-heading {
+  margin-bottom: 3px;
+  color: #455c72;
+  font-size: 12px;
+}
+.debt-heading strong {
+  color: #a64f54;
+  font-size: 13px;
+}
+.account-line {
+  transition: background 140ms ease;
+}
+.account-line:hover { background: #f9fbfd; }
+.account-name { color: #2c435b; }
+.account-sub { color: #718399; }
+.amount.debt { color: #a64f54; }
+.overviewgrid .legendnote {
+  color: #647a91;
+  line-height: 1.6;
+}
+.holding-period {
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e8eef4;
+  margin-bottom: 10px;
+}
+.holding-period .hero-label {
+  font-size: 11px;
+  letter-spacing: 0.025em;
+}
+.invest-total {
+  color: #173c61;
+  font-size: 35px;
+  letter-spacing: -1px;
+}
+.holding-table th { background: #f4f7fa; }
+.holding-table td:first-child { color: #29435d; }
+.holding-change { color: #247d5b; }
+.holding-foot {
+  color: #667c92;
+  line-height: 1.65;
+}
+@media (max-width: 900px) {
+  .hero { background: linear-gradient(150deg, #fff, #f8fbfe); }
+}
+@media (max-width: 560px) {
+  .hero::before { width: 3px; }
+  .hero-value { font-size: 36px; }
+  .balance-split { gap: 14px; }
+  .split-value { font-size: 17px; }
+  .sectionhead { padding-left: 9px; }
+}

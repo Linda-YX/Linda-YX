@@ -30,7 +30,7 @@ async function open(page: Page, kind: Kind) {
   else if (kind === "account") {
     await page
       .getByRole("navigation")
-      .getByRole("button", { name: "账户", exact: true })
+      .getByRole("button", { name: "我的账户", exact: true })
       .click();
     await page
       .getByRole("button", { name: "＋ 添加账户", exact: true })
@@ -38,7 +38,7 @@ async function open(page: Page, kind: Kind) {
   } else {
     await page
       .getByRole("navigation")
-      .getByRole("button", { name: "报告导入", exact: true })
+      .getByRole("button", { name: "数据导入", exact: true })
       .click();
     await page.getByRole("button", { name: "手动输入", exact: true }).click();
     await page.getByRole("button", { name: "继续到核对" }).click();
@@ -141,7 +141,7 @@ test("empty account deletion requires confirmation and preserves all financial h
   const before = await saved(page);
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "账户", exact: true })
+    .getByRole("button", { name: "我的账户", exact: true })
     .click();
   const entry = page.locator('[data-account-id="rogers"]');
   await entry.getByRole("button", { name: /删除账户/ }).click();
@@ -163,7 +163,7 @@ test("empty account deletion requires confirmation and preserves all financial h
   await page.reload();
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "账户", exact: true })
+    .getByRole("button", { name: "我的账户", exact: true })
     .click();
   await expect(entry).toHaveCount(0);
 });
@@ -173,7 +173,7 @@ test("archiving a funded investment preserves its history and removes it from cu
   const before = await saved(page);
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "账户", exact: true })
+    .getByRole("button", { name: "我的账户", exact: true })
     .click();
   const entry = page.locator('.account-group [data-account-id="ws"]');
   await expect(entry.getByRole("button", { name: /删除账户/ })).toHaveCount(0);
@@ -218,7 +218,7 @@ test("archiving a funded investment preserves its history and removes it from cu
   await page.reload();
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "账户", exact: true })
+    .getByRole("button", { name: "我的账户", exact: true })
     .click();
   await expect(page.getByTestId("net-worth")).toHaveText("$46,500");
   await expect(archived).toBeVisible();

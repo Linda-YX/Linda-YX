@@ -1,6 +1,15 @@
 import { test, expect, type Page } from "@playwright/test";
 const key = "finances-local-v1";
 async function navigate(page: Page, name: string) {
+  name =
+    (
+      {
+        总览: "财务总览",
+        账户: "我的账户",
+        投资组合: "投资分析",
+        报告导入: "数据导入",
+      } as Record<string, string>
+    )[name] || name;
   await page
     .getByRole("navigation")
     .getByRole("button", { name, exact: true })
@@ -15,13 +24,11 @@ async function saved(page: Page) {
 async function uploadCSV(page: Page, text: string) {
   await navigate(page, "报告导入");
   await page.getByRole("button", { name: "CSV 文件", exact: true }).click();
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "fictional.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from(text),
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "fictional.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(text),
+  });
   await expect(page.getByText("✓ fictional.csv")).toBeVisible();
   await page.getByRole("button", { name: "继续到核对" }).click();
 }
@@ -103,13 +110,11 @@ test("CSV preview leaves totals unchanged until confirmation; duplicate import w
   await expect(page.getByTestId("net-worth")).toHaveText("$51,700");
   await navigate(page, "报告导入");
   await page.getByRole("button", { name: "CSV 文件", exact: true }).click();
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "again.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from(csv),
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "again.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv),
+  });
   await expect(page.getByText(/该文件已于/)).toBeVisible();
   const s = await saved(page);
   expect(s.imports[0].fingerprint).toHaveLength(64);

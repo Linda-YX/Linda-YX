@@ -23,12 +23,12 @@ export const percent = (n: number | null) =>
 export const signed = (n: number | null) =>
   n === null ? "—" : `${n > 0 ? "+" : n < 0 ? "−" : ""}${money(Math.abs(n))}`;
 export const COLORS = [
-  "#5185d5",
-  "#69b69d",
-  "#e2b452",
-  "#a08bc8",
-  "#8aa6be",
-  "#bdc7d4",
+  "#267b43",
+  "#78ad85",
+  "#b4cdb0",
+  "#dce5d6",
+  "#9db8a3",
+  "#7d8e7c",
 ];
 const CloseModal = createContext<(() => void) | undefined>(undefined);
 export function CancelButton({ children = "取消" }: { children?: ReactNode }) {
